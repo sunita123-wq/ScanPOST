@@ -1,0 +1,21 @@
+name: Chartink Email Alert
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'  # ✅ Every 5 minutes, 24/7
+  workflow_dispatch:        # ✅ Also allows manual trigger
+
+jobs:
+  alert:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: 3.x
+      - run: pip install -r requirements.txt
+      - env:
+          EMAIL_SENDER: ${{ secrets.EMAIL_SENDER }}
+          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+          EMAIL_RECEIVER: ${{ secrets.EMAIL_RECEIVER }}
+        run: python chartink_emailer.py
