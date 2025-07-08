@@ -3,7 +3,7 @@ name: Chartink Emailer
 on:
   workflow_dispatch:
   schedule:
-    - cron: "*/5 4-4 * * 1-5"  # Runs every 5 min from 9:30–10am IST
+    - cron: "0-30/5 9 * * 1-5"  # Runs every 5 min from 2:30–3:00 PM IST (09:00–09:30 UTC)
 
 jobs:
   run-script:
