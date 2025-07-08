@@ -44,9 +44,9 @@ def fetch():
                     symbol = cols[2].inner_text().strip()
                     name = cols[1].inner_text().strip()
                     pct_chg = cols[4].inner_text().strip()
+
                     price_str = cols[5].inner_text().strip().replace(",", "")
                     volume_str = cols[7].inner_text().strip().replace(",", "")
-
                     price = float(price_str)
                     volume = float(volume_str)
                     turnover = format_number(price * volume)
