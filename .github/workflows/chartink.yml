@@ -3,20 +3,30 @@ name: Chartink Email Alert
 on:
   workflow_dispatch:
   schedule:
-    - cron: '*/5 * * * *'  # every 5 mins
+    - cron: '*/5 * * * *'  # Every 5 mins
 
 jobs:
   alert:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+
       - uses: actions/setup-python@v4
         with:
           python-version: 3.x
+
       - run: pip install -r requirements.txt
-      - run: python -m playwright install --with-deps  # 👈 install browser dependencies
-      - env:
+
+      # ✅ Add this step to install Chromium
+      - name: Install Playwright Browsers
+        run: python -m playwright install --with-deps
+
+      - name: Run Script
+        env:
           EMAIL_SENDER: ${{ secrets.EMAIL_SENDER }}
           EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
           EMAIL_RECEIVER: ${{ secrets.EMAIL_RECEIVER }}
-        run: python chartink_emailer.py
+        run: |
+          echo "🟡 Starting chartink_emailer.py"
+          python chartink_emailer.py
+          echo "🟢 Finished chartink_emailer.py"
