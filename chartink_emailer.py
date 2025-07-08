@@ -88,7 +88,7 @@ def send(data):
         print("⚠️ [SEND] No data to send.")
     else:
         for s in data:
-            line = f"{s['nsecode']} | {s['name']} | ₹{s['price']} | {s['pct_chg']} | Turnover: ₹{s['turnover']}"
+            line = f"**{s['nsecode']}** | {s['name']} | ₹{s['price']} | **{s['pct_chg']}** | Turnover: **₹{s['turnover']}**"
             print(f"📩 [SEND] {line}")
             body += line + "\n"
 
