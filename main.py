@@ -81,6 +81,10 @@ def send(data):
     except Exception as e:
         print(f"[MAIL ERROR] {e}")
 
+@app.route("/")
+def home():
+    return jsonify({"message": "✅ Chartink Emailer is Live!", "status": "OK"})
+
 @app.route("/run")
 def run():
     def background():
