@@ -30,28 +30,27 @@ def fetch():
                 rows = page.query_selector_all("table.table tbody tr")
                 for row in rows:
                     cols = row.query_selector_all("td")
-                    if len(cols) == 8:
-                        symbol = cols[2].inner_text().strip()
-                        name = cols[1].inner_text().strip()
-                        price_str = cols[5].inner_text().strip().replace(",", "")
-                        pct_chg = cols[4].inner_text().strip()
-                        volume_str = cols[7].inner_text().strip().replace(",", "")
-
+                    if len(cols) >= 8:
                         try:
+                            symbol = cols[2].inner_text().strip()
+                            name = cols[1].inner_text().strip()
+                            price_str = cols[5].inner_text().strip().replace(",", "")
+                            pct_chg = cols[4].inner_text().strip()
+                            volume_str = cols[7].inner_text().strip().replace(",", "")
+
                             price = float(price_str)
                             volume = float(volume_str)
                             turnover = format_number(price * volume)
-                        except ValueError:
-                            price = 0
-                            turnover = "0"
 
-                        data.append({
-                            "symbol": symbol,
-                            "name": name,
-                            "price": price,
-                            "pct_chg": pct_chg,
-                            "turnover": turnover
-                        })
+                            data.append({
+                                "symbol": symbol,
+                                "name": name,
+                                "price": price,
+                                "pct_chg": pct_chg,
+                                "turnover": turnover
+                            })
+                        except Exception:
+                            continue  # skip any faulty row
                 if data:
                     break
             except TimeoutError:
@@ -76,16 +75,3 @@ def send(data):
 
     msg = MIMEText(body)
     msg["Subject"] = "🔔 Chartink Volume Shockers"
-    msg["From"] = me
-    msg["To"] = you
-
-    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
-        smtp.login(me, pwd)
-        smtp.send_message(msg)
-
-def main():
-    data = fetch()
-    send(data)
-
-if __name__ == "__main__":
-    main()
