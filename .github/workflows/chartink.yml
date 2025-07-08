@@ -3,43 +3,34 @@ name: Chartink Emailer
 on:
   workflow_dispatch:
   schedule:
-    - cron: "30-59/5 9 * * 1-5"  # Every 5 min from 3:00 PM to 3:30 PM IST (09:30–10:00 UTC)
+    - cron: "30-59/5 9 * * 1-5"
 
 jobs:
   run-script:
     runs-on: ubuntu-latest
-
     steps:
-    - name: Checkout repo
-      uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: "3.11"
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
 
-    - name: Cache Playwright Chromium
-      uses: actions/cache@v3
-      with:
-        path: ~/.cache/ms-playwright
-        key: ${{ runner.os }}-playwright
+      - uses: actions/cache@v3
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright
 
-    - name: Install dependencies
-      run: |
-        pip install playwright pytz
-        playwright install chromium
+      - run: |
+          pip install playwright pytz
+          playwright install chromium
 
-    - name: Print UTC Time (for debug)
-      run: |
-        echo "🕐 Current UTC Time: $(date -u)"
-        echo "📅 Schedule Cron Trigger Active"
+      - name: Print UTC Time
+        run: echo "🕐 UTC Now: $(date -u)"
 
-    - name: Run Chartink Emailer
-      env:
-        EMAIL_SENDER: ${{ secrets.EMAIL_SENDER }}
-        EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
-        EMAIL_RECEIVER: ${{ secrets.EMAIL_RECEIVER }}
-      run: |
-        echo "🟡 Starting chartink_emailer.py"
-        python chartink_emailer.py
-        echo "🟢 Finished chartink_emailer.py"
+      - name: Run Chartink Emailer
+        env:
+          EMAIL_SENDER: ${{ secrets.EMAIL_SENDER }}
+          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+          EMAIL_RECEIVER: ${{ secrets.EMAIL_RECEIVER }}
+        run: |
+          python chartink_emailer.py
