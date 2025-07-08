@@ -3,7 +3,7 @@ name: Chartink Emailer
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0-30/5 9 * * 1-5"  # Runs every 5 min from 2:30–3:00 PM IST (09:00–09:30 UTC)
+    - cron: "30-59/5 9 * * 1-5"  # Every 5 min from 3:00 PM to 3:30 PM IST (09:30–10:00 UTC)
 
 jobs:
   run-script:
@@ -28,6 +28,11 @@ jobs:
       run: |
         pip install playwright pytz
         playwright install chromium
+
+    - name: Print UTC Time (for debug)
+      run: |
+        echo "🕐 Current UTC Time: $(date -u)"
+        echo "📅 Schedule Cron Trigger Active"
 
     - name: Run Chartink Emailer
       env:
