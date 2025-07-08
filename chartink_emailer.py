@@ -28,16 +28,13 @@ def fetch():
             try:
                 page.wait_for_selector("table.table tbody tr", timeout=30000)
                 rows = page.query_selector_all("table.table tbody tr")
-                if rows:
-                    for row in rows:
-                        cols = row.query_selector_all("td")
-                        if len(cols) < 8:
-                            continue
-
+                for row in rows:
+                    cols = row.query_selector_all("td")
+                    if len(cols) == 8:
                         symbol = cols[2].inner_text().strip()
                         name = cols[1].inner_text().strip()
-                        price_str = cols[4].inner_text().strip().replace(",", "")
-                        pct_chg = cols[5].inner_text().strip()
+                        price_str = cols[5].inner_text().strip().replace(",", "")
+                        pct_chg = cols[4].inner_text().strip()
                         volume_str = cols[7].inner_text().strip().replace(",", "")
 
                         try:
@@ -55,6 +52,7 @@ def fetch():
                             "pct_chg": pct_chg,
                             "turnover": turnover
                         })
+                if data:
                     break
             except TimeoutError:
                 continue
