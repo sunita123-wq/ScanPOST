@@ -5,16 +5,6 @@ from datetime import datetime
 import pytz
 import os
 
-def format_number(n):
-    if n >= 1_000_000_000:
-        return f"{n / 1_000_000_000:.2f}B"
-    elif n >= 1_000_000:
-        return f"{n / 1_000_000:.2f}M"
-    elif n >= 1_000:
-        return f"{n / 1_000:.2f}K"
-    else:
-        return f"{n:.2f}"
-
 def fetch():
     print("🔍 [FETCH] Launching Playwright Chromium...")
     url = "https://chartink.com/screener/volumeshocker-p-100-2"
@@ -36,27 +26,22 @@ def fetch():
 
             for row in rows:
                 cols = row.query_selector_all("td")
-                if len(cols) < 8:
+                if len(cols) < 5:
                     print("⚠️ [FETCH] Skipping row with insufficient columns")
                     continue
 
                 try:
                     symbol = cols[2].inner_text().strip()
                     name = cols[1].inner_text().strip()
-                    pct_chg = cols[4].inner_text().strip()
-
-                    price_str = cols[5].inner_text().strip().replace(",", "")
-                    volume_str = cols[7].inner_text().strip().replace(",", "")
+                    pct_chg = cols[3].inner_text().strip()
+                    price_str = cols[4].inner_text().strip().replace(",", "")
                     price = float(price_str)
-                    volume = float(volume_str)
-                    turnover = format_number(price * volume)
 
                     stock = {
                         "nsecode": symbol,
                         "name": name,
                         "price": price,
-                        "pct_chg": pct_chg,
-                        "turnover": turnover
+                        "pct_chg": pct_chg
                     }
 
                     print(f"🧾 [FETCH] Row parsed: {stock}")
@@ -88,7 +73,7 @@ def send(data):
         print("⚠️ [SEND] No data to send.")
     else:
         for s in data:
-            line = f"{s['nsecode']} | {s['name']} | ₹{s['price']} | {s['pct_chg']} | Turnover: ₹{s['turnover']}"
+            line = f"{s['nsecode']} | {s['name']} | ₹{s['price']} | {s['pct_chg']}"
             print(f"📩 [SEND] {line}")
             body += line + "\n"
 
