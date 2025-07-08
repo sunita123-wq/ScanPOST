@@ -6,88 +6,73 @@ import pytz
 import os
 
 def fetch():
-    print("🔍 [FETCH] Launching Playwright Chromium...")
     url = "https://chartink.com/screener/volumeshocker-p-100-2"
     data = []
 
-    try:
-        with sync_playwright() as p:
-            browser = p.chromium.launch(headless=True)
-            print("🧠 [FETCH] Chromium launched.")
-            page = browser.new_page()
-            page.goto(url, timeout=60000)
-            print("🌐 [FETCH] Navigated to Chartink URL.")
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page()
+        page.goto(url, timeout=60000)
+        page.wait_for_selector("table.table tbody tr", timeout=15000)
+        rows = page.query_selector_all("table.table tbody tr")
 
-            # Wait for table to appear
-            page.wait_for_selector("table.table tbody tr", timeout=15000)
-            print("✅ [FETCH] Table rows found.")
+        for row in rows:
+            cols = row.query_selector_all("td")
+            if len(cols) < 8:
+                continue
 
-            rows = page.query_selector_all("table.table tbody tr")
-            print(f"📊 [FETCH] Total rows fetched: {len(rows)}")
+            symbol = cols[2].inner_text().strip()
+            name = cols[1].inner_text().strip()
+            price_str = cols[4].inner_text().strip().replace(",", "")
+            pct_chg = cols[5].inner_text().strip()
+            volume_str = cols[7].inner_text().strip().replace(",", "")
 
-            for row in rows:
-                cols = row.query_selector_all("td")
-                if len(cols) < 5:
-                    print("⚠️ [FETCH] Skipping row with insufficient columns")
-                    continue
+            try:
+                price = float(price_str)
+                volume = float(volume_str)
+                turnover = price * volume
+            except ValueError:
+                price = 0
+                turnover = 0
 
-                symbol = cols[2].inner_text().strip()
-                name = cols[1].inner_text().strip()
-                price = cols[4].inner_text().strip()
+            data.append({
+                "symbol": symbol,
+                "name": name,
+                "price": price,
+                "pct_chg": pct_chg,
+                "turnover": turnover
+            })
 
-                stock = {
-                    "nsecode": symbol,
-                    "name": name,
-                    "close": price
-                }
-                print(f"🧾 [FETCH] Row parsed: {stock}")
-                data.append(stock)
-
-            browser.close()
-            print("🛑 [FETCH] Browser closed.")
-
-    except Exception as e:
-        print(f"❌ [FETCH ERROR] {e}")
-    
+        browser.close()
     return data
 
 def send(data):
-    print("📧 [SEND] Preparing email...")
-    me = os.environ.get("EMAIL_SENDER")
-    pwd = os.environ.get("EMAIL_PASSWORD")
-    you = os.environ.get("EMAIL_RECEIVER")
+    me = os.environ["EMAIL_SENDER"]
+    pwd = os.environ["EMAIL_PASSWORD"]
+    you = os.environ["EMAIL_RECEIVER"]
 
     now = datetime.now(pytz.timezone("Asia/Kolkata")).strftime("%Y-%m-%d %H:%M:%S")
     body = f"📈 Chartink Volume Shocker Update — {now}\n\n"
 
     if not data:
         body += "No stocks triggered in this scan."
-        print("⚠️ [SEND] No data to send.")
     else:
         for s in data:
-            line = f"{s['nsecode']} | {s['name']} | ₹{s['close']}"
-            print(f"📩 [SEND] {line}")
-            body += line + "\n"
+            turnover_str = f"{s['turnover']:,.0f}"
+            body += f"{s['symbol']} | {s['name']} | ₹{s['price']} | {s['pct_chg']} | ₹{turnover_str}\n"
 
     msg = MIMEText(body)
     msg["Subject"] = "🔔 Chartink Volume Shockers"
     msg["From"] = me
     msg["To"] = you
 
-    try:
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
-            smtp.login(me, pwd)
-            smtp.send_message(msg)
-            print("✅ [SEND] Email sent successfully.")
-    except Exception as e:
-        print(f"❌ [SEND ERROR] {e}")
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
+        smtp.login(me, pwd)
+        smtp.send_message(msg)
 
 def main():
-    print("🚀 [MAIN] Starting Chartink Emailer at", datetime.now().isoformat())
     data = fetch()
-    print(f"📦 [MAIN] Fetched {len(data)} entries.")
     send(data)
-    print("🏁 [MAIN] Script completed.")
 
 if __name__ == "__main__":
     main()
