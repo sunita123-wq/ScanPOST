@@ -20,6 +20,7 @@ def format_number(n):
         return f"{n:.2f}"
 
 def fetch():
+    print("🔍 [FETCH] Launching Playwright")
     url = "https://chartink.com/screener/volumeshocker-p-100-2"
     data = []
     try:
@@ -29,6 +30,7 @@ def fetch():
             page.goto(url, timeout=60000)
             page.wait_for_selector("table.table tbody tr", timeout=15000)
             rows = page.query_selector_all("table.table tbody tr")
+            print(f"📊 [FETCH] Total rows: {len(rows)}")
             for row in rows:
                 cols = row.query_selector_all("td")
                 if len(cols) < 7:
@@ -50,36 +52,49 @@ def fetch():
                         "pct_chg": f"{pct_chg:.2f}%",
                         "turnover": turnover
                     }
+                    print(f"📦 Parsed: {stock}")
                     data.append(stock)
-                except:
+                except Exception as e:
+                    print(f"⚠️ [PARSE] {e}")
                     continue
             browser.close()
+            print("🛑 [FETCH] Browser closed.")
     except Exception as e:
-        print(f"[ERROR] {e}")
+        print(f"❌ [FETCH ERROR] {e}")
     return data
 
 def send(data):
+    print("✉️ [SEND] Preparing to send email")
     me = os.environ.get("EMAIL_SENDER")
     pwd = os.environ.get("EMAIL_PASSWORD")
     you = os.environ.get("EMAIL_RECEIVER")
+
+    if not me or not pwd or not you:
+        print(f"❌ [SEND] Missing env vars: {me=} {pwd=} {you=}")
+        return
+
     now = datetime.now(pytz.timezone("Asia/Kolkata")).strftime("%Y-%m-%d %H:%M:%S")
     body = f"📈 Chartink Volume Shocker Update — {now}\n\n"
     if not data:
         body += "No stocks triggered in this scan."
+        print("⚠️ [SEND] No data")
     else:
         for s in data:
             line = f"**{s['nsecode']}** | {s['name']} | ₹{s['price']} | **{s['pct_chg']}** | Turnover: **₹{s['turnover']}**"
             body += line + "\n"
-    msg = MIMEText(body)
-    msg["Subject"] = "🔔 Chartink Volume Shockers"
-    msg["From"] = me
-    msg["To"] = you
+            print(f"📩 {line}")
+
     try:
+        msg = MIMEText(body)
+        msg["Subject"] = "🔔 Chartink Volume Shockers"
+        msg["From"] = me
+        msg["To"] = you
         with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
             smtp.login(me, pwd)
             smtp.send_message(msg)
+            print("✅ [SEND] Email sent successfully")
     except Exception as e:
-        print(f"[MAIL ERROR] {e}")
+        print(f"❌ [SEND ERROR] {e}")
 
 @app.route("/")
 def home():
@@ -88,10 +103,11 @@ def home():
 @app.route("/run")
 def run():
     def background():
+        print("🚀 [RUN] Triggered!")
         data = fetch()
         send(data)
     Thread(target=background).start()
-    return jsonify({"status": "Script triggered!"})
+    return jsonify({"message": "📬 Script triggered", "status": "STARTED"})
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000)
