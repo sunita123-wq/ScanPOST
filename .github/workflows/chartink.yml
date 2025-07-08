@@ -1,9 +1,9 @@
 name: Chartink Email Alert
 
 on:
+  workflow_dispatch:
   schedule:
-    - cron: '*/5 * * * *'  # ✅ Every 5 minutes, 24/7
-  workflow_dispatch:        # ✅ Also allows manual trigger
+    - cron: '*/5 * * * *'  # every 5 mins
 
 jobs:
   alert:
@@ -14,6 +14,7 @@ jobs:
         with:
           python-version: 3.x
       - run: pip install -r requirements.txt
+      - run: python -m playwright install --with-deps  # 👈 install browser dependencies
       - env:
           EMAIL_SENDER: ${{ secrets.EMAIL_SENDER }}
           EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
