@@ -1,5 +1,6 @@
 from playwright.sync_api import sync_playwright
 import smtplib
+from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from datetime import datetime
 import pytz
@@ -81,21 +82,27 @@ def send(data):
     you = os.environ.get("EMAIL_RECEIVER")
 
     now = datetime.now(pytz.timezone("Asia/Kolkata")).strftime("%Y-%m-%d %H:%M:%S")
-    body = f"📈 Chartink Volume Shocker Update — {now}\n\n"
+    subject = f"🔔 Chartink Volume Shocker Update — {now}"
+
+    html = f"<h3>📈 Chartink Volume Shocker Update — {now}</h3><br>"
 
     if not data:
-        body += "No stocks triggered in this scan."
+        html += "<p>No stocks triggered in this scan.</p>"
         print("⚠️ [SEND] No data to send.")
     else:
+        html += "<ul style='list-style:none;padding:0;'>"
         for s in data:
-            line = f"**{s['nsecode']}** | {s['name']} | ₹{s['price']} | **{s['pct_chg']}** | Turnover: **₹{s['turnover']}**"
+            line = f"<li><b>{s['nsecode']}</b> | {s['name']} | ₹{s['price']} | <b>{s['pct_chg']}</b> | Turnover: <b>₹{s['turnover']}</b></li>"
             print(f"📩 [SEND] {line}")
-            body += line + "\n"
+            html += line + "<br>"
+        html += "</ul>"
 
-    msg = MIMEText(body)
-    msg["Subject"] = "🔔 Chartink Volume Shockers"
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = subject
     msg["From"] = me
     msg["To"] = you
+
+    msg.attach(MIMEText(html, "html"))
 
     try:
         with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
