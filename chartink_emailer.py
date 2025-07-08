@@ -5,6 +5,16 @@ from datetime import datetime
 import pytz
 import os
 
+def format_number(n):
+    if n >= 1_000_000_000:
+        return f"{n / 1_000_000_000:.2f}B"
+    elif n >= 1_000_000:
+        return f"{n / 1_000_000:.2f}M"
+    elif n >= 1_000:
+        return f"{n / 1_000:.2f}K"
+    else:
+        return f"{n:.2f}"
+
 def fetch():
     print("🔍 [FETCH] Launching Playwright Chromium...")
     url = "https://chartink.com/screener/volumeshocker-p-100-2"
@@ -18,7 +28,6 @@ def fetch():
             page.goto(url, timeout=60000)
             print("🌐 [FETCH] Navigated to Chartink URL.")
 
-            # Wait for table to appear
             page.wait_for_selector("table.table tbody tr", timeout=15000)
             print("✅ [FETCH] Table rows found.")
 
@@ -27,21 +36,35 @@ def fetch():
 
             for row in rows:
                 cols = row.query_selector_all("td")
-                if len(cols) < 5:
+                if len(cols) < 8:
                     print("⚠️ [FETCH] Skipping row with insufficient columns")
                     continue
 
-                symbol = cols[2].inner_text().strip()
-                name = cols[1].inner_text().strip()
-                price = cols[4].inner_text().strip()
+                try:
+                    symbol = cols[2].inner_text().strip()
+                    name = cols[1].inner_text().strip()
+                    pct_chg = cols[4].inner_text().strip()
+                    price_str = cols[5].inner_text().strip().replace(",", "")
+                    volume_str = cols[7].inner_text().strip().replace(",", "")
 
-                stock = {
-                    "nsecode": symbol,
-                    "name": name,
-                    "close": price
-                }
-                print(f"🧾 [FETCH] Row parsed: {stock}")
-                data.append(stock)
+                    price = float(price_str)
+                    volume = float(volume_str)
+                    turnover = format_number(price * volume)
+
+                    stock = {
+                        "nsecode": symbol,
+                        "name": name,
+                        "price": price,
+                        "pct_chg": pct_chg,
+                        "turnover": turnover
+                    }
+
+                    print(f"🧾 [FETCH] Row parsed: {stock}")
+                    data.append(stock)
+
+                except Exception as e:
+                    print(f"⚠️ [FETCH] Skipping row due to error: {e}")
+                    continue
 
             browser.close()
             print("🛑 [FETCH] Browser closed.")
@@ -65,7 +88,7 @@ def send(data):
         print("⚠️ [SEND] No data to send.")
     else:
         for s in data:
-            line = f"{s['nsecode']} | {s['name']} | ₹{s['close']}"
+            line = f"{s['nsecode']} | {s['name']} | ₹{s['price']} | {s['pct_chg']} | Turnover: ₹{s['turnover']}"
             print(f"📩 [SEND] {line}")
             body += line + "\n"
 
