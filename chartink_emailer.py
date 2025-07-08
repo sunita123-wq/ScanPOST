@@ -20,14 +20,21 @@ def fetch():
     if not table:
         return []
 
+    headers_row = table.find("thead").find_all("th")
+    col_indices = {th.text.strip(): i for i, th in enumerate(headers_row)}
+
+    required = ["Symbol", "Stock Name", "Price"]
+    for col in required:
+        if col not in col_indices:
+            print(f"❌ Column '{col}' not found in table.")
+            return []
+
     data = []
     for row in table.find("tbody").find_all("tr"):
         cols = row.find_all("td")
-        if len(cols) < 4:
-            continue
-        symbol = cols[1].text.strip()
-        name = cols[2].text.strip()
-        price = cols[3].text.strip()
+        symbol = cols[col_indices["Symbol"]].text.strip()
+        name = cols[col_indices["Stock Name"]].text.strip()
+        price = cols[col_indices["Price"]].text.strip()
         data.append({
             "nsecode": symbol,
             "name": name,
@@ -59,7 +66,7 @@ def send(data):
         smtp.send_message(msg)
 
 def main():
-    print("🚀 Fetching data from Chartink HTML (no CSRF)")
+    print("🚀 Fetching Chartink HTML results (no CSRF)")
     data = fetch()
     send(data)
 
