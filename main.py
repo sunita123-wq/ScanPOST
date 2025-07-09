@@ -24,36 +24,42 @@ def fetch():
     data = []
     try:
         with sync_playwright() as p:
-            browser = p.chromium.launch(headless=True)
-            page = browser.new_page()
-            page.goto(url, timeout=60000)
-            page.wait_for_selector("table.table tbody tr", timeout=15000)
-            rows = page.query_selector_all("table.table tbody tr")
-            for row in rows:
-                cols = row.query_selector_all("td")
-                if len(cols) < 7:
-                    continue
-                try:
-                    symbol = cols[2].inner_text().strip()
-                    name = cols[1].inner_text().strip()
-                    pct_chg_str = cols[4].inner_text().strip().replace("%", "")
-                    price_str = cols[5].inner_text().strip().replace(",", "")
-                    volume_str = cols[6].inner_text().strip().replace(",", "")
-                    pct_chg = float(pct_chg_str)
-                    price = float(price_str)
-                    volume = float(volume_str)
-                    turnover = format_number(price * volume)
-                    stock = {
-                        "nsecode": symbol,
-                        "name": name,
-                        "price": price,
-                        "pct_chg": f"{pct_chg:.2f}%",
-                        "turnover": turnover
-                    }
-                    data.append(stock)
-                except:
-                    continue
-            browser.close()
+            browser = p.chromium.launch(
+                headless=True,
+                args=["--no-sandbox", "--disable-dev-shm-usage"]
+            )
+            try:
+                page = browser.new_page()
+                page.goto(url, timeout=60000)
+                page.wait_for_selector("table.table tbody tr", timeout=15000)
+                rows = page.query_selector_all("table.table tbody tr")
+
+                for row in rows:
+                    cols = row.query_selector_all("td")
+                    if len(cols) < 7:
+                        continue
+                    try:
+                        symbol = cols[2].inner_text().strip()
+                        name = cols[1].inner_text().strip()
+                        pct_chg_str = cols[4].inner_text().strip().replace("%", "")
+                        price_str = cols[5].inner_text().strip().replace(",", "")
+                        volume_str = cols[6].inner_text().strip().replace(",", "")
+                        pct_chg = float(pct_chg_str)
+                        price = float(price_str)
+                        volume = float(volume_str)
+                        turnover = format_number(price * volume)
+                        stock = {
+                            "nsecode": symbol,
+                            "name": name,
+                            "price": price,
+                            "pct_chg": f"{pct_chg:.2f}%",
+                            "turnover": turnover
+                        }
+                        data.append(stock)
+                    except:
+                        continue
+            finally:
+                browser.close()
     except Exception as e:
         print(f"[ERROR] {e}")
     return data
@@ -72,7 +78,7 @@ def send(data):
             line = f"<b>{s['nsecode']}</b> | {s['name']} | ₹{s['price']} | <b>{s['pct_chg']}</b> | Turnover: <b>₹{s['turnover']}</b>"
             body += line + "<br>"
 
-    msg = MIMEText(body, "html")  # Send as HTML
+    msg = MIMEText(body, "html")
     msg["Subject"] = "🔔 Chartink Volume Shockers"
     msg["From"] = me
     msg["To"] = you
