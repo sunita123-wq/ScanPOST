@@ -112,7 +112,13 @@ def run():
     def background():
         current = fetch()
         previous = load_previous_data()
-        if has_changed(current, previous):
+
+        if not previous:
+            print("🆕 [INFO] First run — sending initial email.")
+            send(current)
+            save_current_data(current)
+        elif has_changed(current, previous):
+            print("🔄 [INFO] Change detected — sending updated email.")
             send(current)
             save_current_data(current)
         else:
